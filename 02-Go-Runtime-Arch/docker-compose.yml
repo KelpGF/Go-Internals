@@ -1,0 +1,10 @@
+services:
+  go-runtime:
+    image: golang:1.22
+    container_name: go-runtime
+    entrypoint: sh -c "tail -f /dev/null"
+    working_dir: /app
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
