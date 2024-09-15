@@ -73,7 +73,25 @@ When the program allocates and deallocates memory in the heap, it can cause frag
 
 ![Fragmentation](img/fragmentation.png)
 
-#### Ar
+#### Arena Allocation
+
+To avoid fragmentation, the program can use arena allocation. This technique allocates a blocks of memory and assigns it to the programs.
+
+![arena](img/arena.png)
+
+However, this technique don't solve the problem of fragmentation, but it can reduce it.
+
+##### Chunk Allocation
+
+Chunk allocation is a technique that divides a arena in chunks, so the program can allocate a chunk of memory and deallocate it when it is no longer needed.
+
+We have some sizes of chunks, for example:
+
+- **Fast bin**: 8kb
+- **Small bin**: 64kb
+- **Large bin**: >1MB
+
+![chunk](img/chunk.png)
 
 ### Concurrent Access
 
