@@ -46,3 +46,59 @@ How the Go Garbage Collector works:
 - **non-generational**: Consider all objects in the heap as the same generation, without distinguishing between young and old objects.
 - **concurrent**: Run concurrently with the application, so it does not stop the execution of the program.
 - **tricolor**: Uses a tricolor algorithm to determine which objects are reachable and which are not.
+
+### Reachable Objects
+
+The garbage collector considers an object as reachable if it is possible to access it from the root of the program.
+
+- **Roots:** Roots are entry points to access the reachable objects. Includes global variables, stack variables, and CPU registers.
+- **Referenced Objects:** Objects that are accessible from the roots. The garbage collector marks these objects as reachable.
+  - Example: If a global variable references an object A, and the object A references an object B, the objects A and B are considered reachable.
+  - If a object C that is not referenced by any root, it is considered unreachable.
+
+Then, the garbage collector marks the objects that are reachable and frees the memory of the objects that are not reachable.
+
+### How GO Garbage Collector Works
+
+1. SWT (Stop The World): The garbage collector stops the execution of the program.
+    1. Mark Setup: The garbage collector prepares the marking phase. Raises the Write Barrier.
+    2. Write Barrier: The Write Barrier is a mechanism that is used to intercept the writes in the heap. It is used to mark the objects that are being modified.
+2. Marking Work: The garbage collector starts marking the reachable objects.
+    1. Uses 25% of the CPU to mark the objects.
+    2. Mark Assist: If the marking phase takes too long, the garbage collector asks the goroutines to help with the marking.
+    3. In this phase, the program is already running again. The marking occurs concurrently with the program.
+3. Mark Termination: The garbage collector finishes the marking phase.
+    1. SWT again, because new objects can be created during the marking phase.
+    2. Finalize the marking phase.
+    3. Turn off the Write Barrier.
+4. Sweeping: The garbage collector frees the memory of the objects that are not reachable.
+
+#### Marking Phase
+
+On this step, the garbage collector marks the objects that are reachable with a tricolor algorithm. The algorithm uses three colors to determine the state of the objects:
+
+- **White**: Objects that are not marked yet.
+- **Grey**: Objects that are marked but not scanned yet.
+- **Black**: Objects that are marked and scanned.
+
+1. Mark each root as grey.
+2. For each grey object, mark it as black and mark its references as grey.
+3. Repeat the process until there are no more grey objects.
+
+#### GOGC Environment Variable
+
+The GOGC environment variable is used to set the size of heap that triggers the garbage collector. The default value is 100, which means that the garbage collector is triggered when the heap size reaches 100%.
+
+Example: If we not set the GOGC environment variable and the heap size on the last garbage collection was 4mb, the garbage collector will be triggered when the heap size reaches 8mb (4mb+100%).
+
+If we set the GOGC environment variable less than 100, the garbage collector will be triggered more frequently.
+
+- Less memory usage.
+- More CPU usage (each collection uses 25% of the CPU).
+- More STW (Stop The World).
+
+If we set the GOGC environment variable greater than 100, the garbage collector will be triggered less frequently.
+
+- More memory usage.
+- Less CPU usage.
+- Less STW.
