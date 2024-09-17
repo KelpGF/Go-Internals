@@ -102,3 +102,60 @@ If we set the GOGC environment variable greater than 100, the garbage collector 
 - More memory usage.
 - Less CPU usage.
 - Less STW.
+
+#### GC Trace
+
+```bash
+gc 1 @0.019s 0%: 0.014+0.56+0.01 ms clock, 0.029+0/0.55/0+0.021 ms cpu, 4->4->1 MB, 5 MB goal, 8 P
+```
+
+- **Clock Time**: Time spent by the garbage collector on the point of view of a external visitor. That includes aspects of execution and waiting time. Time since starts until the end of the garbage collector cycle.
+- **CPU Time**: Time spent by the garbage collector on the point of view of the CPU. That includes only the time that the CPU is working. Time since starts until the end of the garbage collector cycle, excluding the time that the CPU is waiting.
+
+- **gc N**: Number of cycle of garbage collector.
+  - If the number is 1, it is the first cycle. If the number is 200, it is the 200th cycle.
+- **@0.019s**: Time since the program started until the garbage collector cycle starts.
+- **0%**: Percentage of the CPU usage time spent by the garbage collector.
+- **0.014+0.56+0.01 ms clock**: Time spent by the garbage collector.
+  - **0.014**: Time spent in the setup phase.
+  - **0.56**: Time spent in the concurrent phase.
+  - **0.01**: Time spent from the beginning of marking completion to the end of sweeping.
+- **0.029+0/0.55/0+0.021 ms cpu**: CPU time spent by the garbage collector.
+  - **0.029**: CPU time spent in the SWT_SWEEP_TERMINATION phase.
+    - **+0**: Additional CPU time spent in the marking phase.
+  - **0.55**: CPU time spent in the MARK_AND_SWEEP phase.
+  - **0+0.021**: CPU time spent in the SWT_MARK_TERMINATION phase.
+    - **0+**: Additional CPU time spent SWT before this phase.
+- **4->4->1 MB**: Heap size before the garbage collector cycle, heap size after the garbage collector cycle starts, and the heap size after the garbage collector cycle ends.
+- **5 MB goal**: The goal of the heap size for the next garbage collector cycle.
+- **8 P**: Number of processors used by the Go Scheduler.
+
+#### Running example
+
+```bash
+GODEBUG=gctrace=1 GOGC=300 go run main.go m
+```
+
+#### Memory Limit
+
+We can set a memory limit for the Go program using the `runtime/debug` package.
+
+```go
+package main
+
+import (
+  "runtime/debug"
+)
+
+func main() {
+  debug.SetMaxStack(1000000)
+}
+```
+
+When we run the same program with different memory limits, we can see that the garbage collector is triggered more frequently when the memory limit is lower.
+
+Its happens because the program reaches the memory limit faster, so the garbage collector is triggered more frequently.
+
+```bash
+GODEBUG=gctrace=1 GOGC=300 go run main.go m-limit
+```
