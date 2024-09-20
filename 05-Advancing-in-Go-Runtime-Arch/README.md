@@ -38,6 +38,69 @@ Unbuffered channels have no capacity. They block the sender until the receiver i
 
 In resume, we can send only one value at a time and the sender will be blocked until the receiver processes the value.
 
+#### When to use
+
+- Synchronization: when we need ensure that the sender operation is directly connected to the receiver operation.
+- Handshake: when we need to make sure that the receiver is ready to continue the work.
+- Timed Events: when we need to wait for a data in a channel with a timeout.
+- Coordinated finish: when we need to finish when all goroutines finish their work.
+
 ### Buffered Channels
 
 Buffered channels have a capacity. They allow the sender to send values until the buffer is full. When the buffer is full, the sender is blocked until the receiver processes a value.
+
+#### When to use buffer
+
+- High producer and high consumer: when the producer is faster than the consumer, the producer can send values to the buffer and continue its work.
+- Pipelines of goroutines: when you have a pipeline of goroutines, not use buffered channels can lead to a blocking way or deadlocks.
+- Asynchronous tasks: when you want to send values to a channel and continue the work without waiting for the receiver, such logs or metrics.
+- Multiple producers for the same channel: when you have multiple goroutines sending values to the same channel, the buffer can help to avoid blocking the sender.
+- I/O operations: for example, reading files or network operations.
+
+#### How large should be the buffer?
+
+It depends on the application. You should consider the amount of data that the producer can send and the amount of data that the consumer can process.
+
+However, we have some deadlines that can help you to decide the buffer size:
+
+- Producer and Consumer Rate
+  - **Variable Rate:** If the producer and consumer have variable rates, you should consider a bigger buffer to avoid blocking.
+  - **Fixed Rate:** If the producer and consumer have fixed rates, you can use a buffer with the same size of the producer rate.
+
+- Latency, Throughput and Performance
+  - **Low Latency:** If you need low latency, you should consider a smaller buffer.
+  - **High Throughput:** If you need high throughput, you should consider a bigger buffer.
+
+- Memory
+  - **Memory:** If you have memory constraints, you should consider a smaller buffer.
+
+### Internal Implementation
+
+```go
+type hchan struct {
+  qcount   uint           // total amount of data in the queue
+  dataqsiz uint           // size of the circular queue
+  buf      unsafe.Pointer // points to an array of dataqsiz elements
+  elemsize uint16         // size of each element in the queue
+  closed   uint32         // 0 or 1
+  sendx    uint           // send index: where to put the next data element sent to the channel
+  recvx    uint           // receive index: where to get the next data element in the channel
+  recvq    waitq          // list of recv waiters (go routines) to receive data
+  sendq    waitq          // list of send waiters (go routines) to send data
+  lock     mutex          // lock to protect the queue
+}
+```
+
+### How it works
+
+#### Send
+
+![send-to-channel](img/send-to-channel.png)
+
+#### Receive
+
+![receive-from-channel](img/receive-from-channel.png)
+
+#### Close
+
+![close-channel](img/close-channel.png)
